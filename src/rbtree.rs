@@ -33,7 +33,7 @@ impl<K> RbTree<K> {
         self.root.is_none()
     }
 
-    pub fn left_rotate(&mut self, mut node_ptr: NodePtr<K>) {
+    pub fn rotate_left(&mut self, mut node_ptr: NodePtr<K>) {
         unsafe {
             if let Some(mut right_ptr) = node_ptr.as_ref().right {
                 node_ptr.as_mut().right = right_ptr.as_ref().left;
@@ -55,6 +55,32 @@ impl<K> RbTree<K> {
 
                 right_ptr.as_mut().left = Some(node_ptr);
                 node_ptr.as_mut().parent = Some(right_ptr);
+            }
+        }
+    }
+
+    pub fn rotate_right(&mut self, mut node_ptr: NodePtr<K>) {
+        unsafe {
+            if let Some(mut left_ptr) = node_ptr.as_ref().left {
+                node_ptr.as_mut().left = left_ptr.as_ref().right;
+                if let Some(mut right_ptr) = left_ptr.as_ref().right {
+                    right_ptr.as_mut().parent = Some(node_ptr);
+                }
+
+                left_ptr.as_mut().parent = node_ptr.as_ref().parent;
+                match node_ptr.as_ref().parent {
+                    None => self.root = Some(left_ptr),
+                    Some(mut parent_ptr) => {
+                        if parent_ptr.as_ref().left == Some(node_ptr) {
+                            parent_ptr.as_mut().left = Some(left_ptr);
+                        } else {
+                            parent_ptr.as_mut().right = Some(left_ptr);
+                        }
+                    }
+                }
+
+                left_ptr.as_mut().right = Some(node_ptr);
+                node_ptr.as_mut().parent = Some(left_ptr);
             }
         }
     }
