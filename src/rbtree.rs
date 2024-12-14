@@ -236,7 +236,7 @@ where
                                             current = grandparent;
                                         }
                                     } else if current == parent_ptr.as_ref().right {
-                                        current = node_ptr.as_mut().parent;
+                                        current = parent;
                                         node_ptr = current.unwrap();
                                         self.rotate_left(node_ptr);
                                     } else {
@@ -253,7 +253,7 @@ where
                                             current = grandparent;
                                         }
                                     } else if current == parent_ptr.as_ref().left {
-                                        current = node_ptr.as_mut().parent;
+                                        current = parent;
                                         node_ptr = current.unwrap();
                                         self.rotate_right(node_ptr);
                                     } else {
