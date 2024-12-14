@@ -233,10 +233,11 @@ where
                                             parent_ptr.as_mut().color = Color::Black;
                                             right_uncle_ptr.as_mut().color = Color::Black;
                                             grandparent_ptr.as_mut().color = Color::Red;
-                                            current = parent_ptr.as_mut().parent;
+                                            current = grandparent;
                                         }
-                                    } else if node_ptr == parent_ptr.as_ref().right.unwrap() {
+                                    } else if current == parent_ptr.as_ref().right {
                                         current = node_ptr.as_mut().parent;
+                                        node_ptr = current.unwrap();
                                         self.rotate_left(node_ptr);
                                     } else {
                                         parent_ptr.as_mut().color = Color::Black;
@@ -249,10 +250,11 @@ where
                                             parent_ptr.as_mut().color = Color::Black;
                                             left_uncle_ptr.as_mut().color = Color::Black;
                                             grandparent_ptr.as_mut().color = Color::Red;
-                                            current = parent_ptr.as_mut().parent;
+                                            current = grandparent;
                                         }
-                                    } else if node_ptr == parent_ptr.as_ref().left.unwrap() {
+                                    } else if current == parent_ptr.as_ref().left {
                                         current = node_ptr.as_mut().parent;
+                                        node_ptr = current.unwrap();
                                         self.rotate_right(node_ptr);
                                     } else {
                                         parent_ptr.as_mut().color = Color::Black;
@@ -272,23 +274,23 @@ where
         }
     }
 
-    pub fn inorder_transverse(&self) -> Vec<K> {
+    pub fn inorder_traverse(&self) -> Vec<K> {
         let mut result: Vec<K> = Vec::new();
 
-        self.inorder(self.root.to_owned(), &mut result);
+        self.inorder(self.root.borrow(), &mut result);
 
         result
     }
 
-    fn inorder(&self, node: Link<K>, result: &mut Vec<K>) {
+    fn inorder(&self, node: &Link<K>, result: &mut Vec<K>) {
         match node {
             None => return,
             Some(node_ptr) => unsafe {
                 let key = node_ptr.as_ref().key;
 
-                self.inorder(node_ptr.to_owned().as_ref().left.to_owned(), result);
+                self.inorder(node_ptr.as_ref().left.borrow(), result);
                 result.push(key);
-                self.inorder(node_ptr.to_owned().as_ref().left.to_owned(), result);
+                self.inorder(node_ptr.as_ref().right.borrow(), result);
             },
         }
     }
