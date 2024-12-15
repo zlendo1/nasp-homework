@@ -12,9 +12,9 @@ fn main() {
 
     loop {
         println!("\nMenu:");
+        println!("0. Exit");
         println!("1. Insert new node");
         println!("2. Inorder print nodes");
-        println!("3. Exit");
         print!("\nEnter your choice: ");
 
         use std::io::Write;
@@ -27,6 +27,10 @@ fn main() {
         let choice = choice.trim();
 
         match choice {
+            "0" => {
+                println!("Exiting the program. Goodbye!");
+                break;
+            }
             "1" => {
                 print!("Enter the new node: ");
                 io::stdout().flush().unwrap();
@@ -57,10 +61,6 @@ fn main() {
                     }
                     println!("")
                 }
-            }
-            "3" => {
-                println!("Exiting the program. Goodbye!");
-                break;
             }
             _ => {
                 println!("Invalid choice. Please try again.");
