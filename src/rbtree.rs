@@ -312,7 +312,6 @@ where
                 }
             }
 
-            // Ensure the root is black
             if let Some(mut root_ptr) = self.root {
                 root_ptr.as_mut().color = Color::Black;
             }
