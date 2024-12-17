@@ -1,5 +1,6 @@
 use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, ptr::NonNull};
 
+#[derive(Clone, Copy)]
 enum Color {
     Black,
     Red,
@@ -84,6 +85,26 @@ impl<K> Node<K> {
             Color::Black => true,
             Color::Red => false,
         }
+    }
+
+    fn has_child(&self) -> bool {
+        return self.left.is_some() || self.right.is_some();
+    }
+
+    fn has_children(&self) -> bool {
+        return self.left.is_some() && self.right.is_some();
+    }
+
+    fn has_left(&self) -> bool {
+        return self.left.is_some();
+    }
+
+    fn has_right(&self) -> bool {
+        return self.right.is_some();
+    }
+
+    fn has_parent(&self) -> bool {
+        return self.parent.is_some();
     }
 }
 
@@ -316,5 +337,86 @@ where
                 root_ptr.as_mut().color = Color::Black;
             }
         }
+    }
+
+    pub fn delete<Q>(&mut self, key: &Q) -> Option<K>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        let node_ptr = self.find(key)?;
+        let key = unsafe { self.remove_entry_at_occupied_pos(node_ptr) };
+        Some(key)
+    }
+
+    unsafe fn remove_entry_at_occupied_pos(&mut self, mut node_ptr: NodePtr<K>) -> K {
+        debug_assert!(!self.is_empty());
+
+        let mut min_child_parent_color = node_ptr.as_ref().is_black();
+        let mut replacement = Some(node_ptr);
+
+        if !node_ptr.as_ref().has_left() {
+            replacement = node_ptr.as_mut().right;
+            self.transplant(node_ptr, node_ptr.as_mut().right);
+        } else if !node_ptr.as_ref().has_right() {
+            replacement = node_ptr.as_mut().left;
+            self.transplant(node_ptr, node_ptr.as_mut().left);
+        } else {
+            let mut min_child_ptr = self.minimum(node_ptr.as_ref().right.unwrap());
+            min_child_parent_color = min_child_ptr.as_ref().is_black();
+            replacement = min_child_ptr.as_mut().right;
+
+            if let Some(node_right_ptr) = node_ptr.as_mut().right {
+                if min_child_ptr != node_right_ptr {
+                    self.transplant(min_child_ptr, min_child_ptr.as_mut().right);
+
+                    min_child_ptr.as_mut().right = node_ptr.as_mut().right;
+                    min_child_ptr.as_mut().right.unwrap().as_mut().parent = Some(min_child_ptr);
+                }
+            } else if let Some(mut replacement_ptr) = replacement {
+                replacement_ptr.as_mut().parent = Some(min_child_ptr);
+            }
+
+            self.transplant(node_ptr, Some(min_child_ptr));
+            min_child_ptr.as_mut().left = node_ptr.as_ref().left;
+            min_child_ptr.as_mut().left.unwrap().as_mut().parent = Some(min_child_ptr);
+            min_child_ptr.as_mut().color = node_ptr.as_mut().color;
+        }
+
+        if min_child_parent_color {
+            self.balance_delete(replacement);
+        }
+
+        Node::destroy(node_ptr)
+    }
+
+    fn minimum(&self, node_ptr: NodePtr<K>) -> NodePtr<K> {
+        unsafe {
+            if !node_ptr.as_ref().has_left() {
+                return node_ptr;
+            }
+
+            self.minimum(node_ptr.as_ref().left.unwrap())
+        }
+    }
+
+    fn transplant(&mut self, mut node_ptr: NodePtr<K>, replacement: Link<K>) {
+        unsafe {
+            if node_ptr.as_mut().parent.is_none() {
+                self.root = replacement;
+            } else if Some(node_ptr) == node_ptr.as_mut().parent.unwrap().as_ref().left {
+                node_ptr.as_mut().parent.unwrap().as_mut().left = replacement;
+            } else {
+                node_ptr.as_mut().parent.unwrap().as_mut().right = replacement;
+            }
+
+            if let Some(mut replacement_ptr) = replacement {
+                replacement_ptr.as_mut().parent = node_ptr.as_mut().parent;
+            }
+        }
+    }
+
+    fn balance_delete(&mut self, link: Link<K>) {
+        // TODO Implement balance delete
     }
 }
