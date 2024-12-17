@@ -267,65 +267,54 @@ where
         unsafe {
             while let Some(mut node_ptr) = current {
                 let parent = node_ptr.as_mut().parent;
+                if parent.is_none() || parent.unwrap().as_ref().is_black() {
+                    break;
+                }
 
-                match parent {
-                    None => break,
-                    Some(mut parent_ptr) => {
-                        if parent_ptr.as_ref().is_black() {
-                            break;
-                        }
+                let mut parent_ptr = parent.unwrap();
+                let grandparent = parent_ptr.as_mut().parent;
+                if grandparent.is_none() {
+                    break;
+                }
 
-                        let grandparent = parent_ptr.as_mut().parent;
+                let mut grandparent_ptr = grandparent.unwrap();
+                let left_uncle = grandparent_ptr.as_mut().left;
+                let right_uncle = grandparent_ptr.as_mut().right;
+                let is_left = parent == left_uncle;
 
-                        match grandparent {
-                            None => break,
-                            Some(mut grandparent_ptr) => {
-                                let left_uncle = grandparent_ptr.as_mut().left;
-                                let right_uncle = grandparent_ptr.as_mut().right;
-
-                                if parent == left_uncle {
-                                    if let Some(mut right_uncle_ptr) = right_uncle {
-                                        if right_uncle_ptr.as_ref().is_red() {
-                                            parent_ptr.as_mut().color = Color::Black;
-                                            right_uncle_ptr.as_mut().color = Color::Black;
-                                            grandparent_ptr.as_mut().color = Color::Red;
-                                            current = grandparent;
-                                        }
-                                    } else if current == parent_ptr.as_ref().right {
-                                        current = parent;
-                                        node_ptr = current.unwrap();
-                                        self.rotate_left(node_ptr);
-                                    } else {
-                                        parent_ptr.as_mut().color = Color::Black;
-                                        grandparent_ptr.as_mut().color = Color::Red;
-                                        self.rotate_right(grandparent_ptr);
-                                    }
-                                } else {
-                                    if let Some(mut left_uncle_ptr) = left_uncle {
-                                        if left_uncle_ptr.as_ref().is_red() {
-                                            parent_ptr.as_mut().color = Color::Black;
-                                            left_uncle_ptr.as_mut().color = Color::Black;
-                                            grandparent_ptr.as_mut().color = Color::Red;
-                                            current = grandparent;
-                                        }
-                                    } else if current == parent_ptr.as_ref().left {
-                                        current = parent;
-                                        node_ptr = current.unwrap();
-                                        self.rotate_right(node_ptr);
-                                    } else {
-                                        parent_ptr.as_mut().color = Color::Black;
-                                        grandparent_ptr.as_mut().color = Color::Red;
-                                        self.rotate_left(grandparent_ptr);
-                                    }
-                                }
-                            }
-                        }
+                let uncle = if is_left { right_uncle } else { left_uncle };
+                if let Some(mut uncle_ptr) = uncle {
+                    if uncle_ptr.as_ref().is_red() {
+                        parent_ptr.as_mut().color = Color::Black;
+                        uncle_ptr.as_mut().color = Color::Black;
+                        grandparent_ptr.as_mut().color = Color::Red;
+                        current = grandparent;
+                        continue;
                     }
+                }
+
+                if is_left {
+                    if current == parent_ptr.as_ref().right {
+                        current = Some(parent_ptr);
+                        self.rotate_left(current.unwrap());
+                    }
+                    parent_ptr.as_mut().color = Color::Black;
+                    grandparent_ptr.as_mut().color = Color::Red;
+                    self.rotate_right(grandparent_ptr);
+                } else {
+                    if current == parent_ptr.as_ref().left {
+                        current = Some(parent_ptr);
+                        self.rotate_right(current.unwrap());
+                    }
+                    parent_ptr.as_mut().color = Color::Black;
+                    grandparent_ptr.as_mut().color = Color::Red;
+                    self.rotate_left(grandparent_ptr);
                 }
             }
 
-            if let Some(mut node_ptr) = self.root {
-                node_ptr.as_mut().color = Color::Black;
+            // Ensure the root is black
+            if let Some(mut root_ptr) = self.root {
+                root_ptr.as_mut().color = Color::Black;
             }
         }
     }
