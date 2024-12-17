@@ -18,3 +18,22 @@ fn test_insert() {
 
     assert_eq!(result, elements);
 }
+
+#[test]
+fn test_clear() {
+    let mut tree: RbTree<u32> = RbTree::new();
+
+    assert!(tree.is_empty());
+
+    let elements: Vec<u32> = vec![6, 11, 10, 2, 9];
+
+    for element in elements.iter() {
+        tree.insert(*element);
+    }
+
+    tree.clear();
+
+    let result = tree.inorder_traverse();
+
+    assert_eq!(result.len(), 0)
+}

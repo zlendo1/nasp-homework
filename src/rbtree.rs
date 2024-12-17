@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, marker::PhantomData, ptr::NonNull};
+use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, ptr::NonNull};
 
 enum Color {
     Black,
@@ -104,6 +104,41 @@ where
 
     pub fn is_empty(&self) -> bool {
         self.root.is_none()
+    }
+
+    fn find<Q>(&self, key: &Q) -> Link<K>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        let mut current = self.root;
+        while let Some(node_ptr) = current {
+            current = unsafe {
+                match key.cmp(node_ptr.as_ref().key.borrow()) {
+                    Ordering::Equal => break,
+                    Ordering::Less => node_ptr.as_ref().left,
+                    Ordering::Greater => node_ptr.as_ref().right,
+                }
+            }
+        }
+        current
+    }
+
+    pub fn clear(&mut self) {
+        self.recursive_destroy(self.root);
+
+        self.root = None;
+    }
+
+    fn recursive_destroy(&mut self, node: Link<K>) {
+        match node {
+            None => return,
+            Some(mut node_ptr) => unsafe {
+                self.recursive_destroy(node_ptr.as_mut().left);
+                self.recursive_destroy(node_ptr.as_mut().right);
+                Node::destroy(node_ptr);
+            },
+        }
     }
 
     pub fn inorder_traverse(&self) -> Vec<K> {
