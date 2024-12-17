@@ -106,6 +106,27 @@ where
         self.root.is_none()
     }
 
+    pub fn inorder_traverse(&self) -> Vec<K> {
+        let mut result: Vec<K> = Vec::new();
+
+        self.inorder(self.root.borrow(), &mut result);
+
+        result
+    }
+
+    fn inorder(&self, node: &Link<K>, result: &mut Vec<K>) {
+        match node {
+            None => return,
+            Some(node_ptr) => unsafe {
+                let key = node_ptr.as_ref().key;
+
+                self.inorder(node_ptr.as_ref().left.borrow(), result);
+                result.push(key);
+                self.inorder(node_ptr.as_ref().right.borrow(), result);
+            },
+        }
+    }
+
     fn rotate_left(&mut self, mut node_ptr: NodePtr<K>) {
         unsafe {
             if let Some(mut right_ptr) = node_ptr.as_ref().right {
@@ -271,27 +292,6 @@ where
             if let Some(mut node_ptr) = self.root {
                 node_ptr.as_mut().color = Color::Black;
             }
-        }
-    }
-
-    pub fn inorder_traverse(&self) -> Vec<K> {
-        let mut result: Vec<K> = Vec::new();
-
-        self.inorder(self.root.borrow(), &mut result);
-
-        result
-    }
-
-    fn inorder(&self, node: &Link<K>, result: &mut Vec<K>) {
-        match node {
-            None => return,
-            Some(node_ptr) => unsafe {
-                let key = node_ptr.as_ref().key;
-
-                self.inorder(node_ptr.as_ref().left.borrow(), result);
-                result.push(key);
-                self.inorder(node_ptr.as_ref().right.borrow(), result);
-            },
         }
     }
 }
