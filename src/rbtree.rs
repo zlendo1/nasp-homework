@@ -1,11 +1,12 @@
-use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, ptr::NonNull};
+use std::{borrow::Borrow, cmp::Ordering, fmt::Debug, marker::PhantomData, ptr::NonNull};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Color {
     Black,
     Red,
 }
 
+#[derive(Debug)]
 struct Node<K> {
     parent: Link<K>,
     left: Link<K>,
@@ -47,7 +48,7 @@ enum InsertPos<K> {
     },
 }
 
-impl<K> Node<K> {
+impl<K: Debug> Node<K> {
     fn create(parent: Link<K>, key: K) -> NodePtr<K> {
         let boxed = Box::new(Node {
             parent,
@@ -81,10 +82,7 @@ impl<K> Node<K> {
     }
 
     fn is_black(&self) -> bool {
-        match self.color {
-            Color::Black => true,
-            Color::Red => false,
-        }
+        return !self.is_red();
     }
 
     fn has_child(&self) -> bool {
@@ -108,13 +106,14 @@ impl<K> Node<K> {
     }
 }
 
+#[derive(Debug)]
 pub struct RbTree<K> {
     root: Link<K>,
 }
 
 impl<K> RbTree<K>
 where
-    K: Copy,
+    K: Copy + Debug,
 {
     pub fn new() -> Self
     where
@@ -338,7 +337,9 @@ where
                 if is_left {
                     if current == parent_ptr.as_ref().right {
                         current = Some(parent_ptr);
-                        self.rotate_left(current.unwrap());
+                        node_ptr = current.unwrap();
+                        self.rotate_left(node_ptr);
+                        parent_ptr = node_ptr.as_mut().parent.unwrap();
                     }
                     parent_ptr.as_mut().color = Color::Black;
                     grandparent_ptr.as_mut().color = Color::Red;
@@ -346,7 +347,9 @@ where
                 } else {
                     if current == parent_ptr.as_ref().left {
                         current = Some(parent_ptr);
-                        self.rotate_right(current.unwrap());
+                        node_ptr = current.unwrap();
+                        self.rotate_right(node_ptr);
+                        parent_ptr = node_ptr.as_mut().parent.unwrap();
                     }
                     parent_ptr.as_mut().color = Color::Black;
                     grandparent_ptr.as_mut().color = Color::Red;
@@ -365,18 +368,30 @@ where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        let node_ptr = self.find(key)?;
+        let found = self.find(key);
+
+        if found.is_none() {
+            return None;
+        }
+
+        let node_ptr = found.unwrap();
         let key = unsafe { self.remove_entry_at_occupied_pos(node_ptr) };
+
         Some(key)
     }
 
     unsafe fn remove_entry_at_occupied_pos(&mut self, mut node_ptr: NodePtr<K>) -> K {
         debug_assert!(!self.is_empty());
 
-        let mut min_child_parent_color = node_ptr.as_ref().is_black();
-        let mut replacement = Some(node_ptr);
+        let mut is_min_child_black = node_ptr.as_ref().is_black();
+        let replacement: Option<NonNull<Node<K>>>;
 
-        if !node_ptr.as_ref().has_left() {
+        let mut leaf_deletion = false;
+
+        if !node_ptr.as_ref().has_child() {
+            replacement = Some(node_ptr);
+            leaf_deletion = true;
+        } else if !node_ptr.as_ref().has_left() {
             replacement = node_ptr.as_mut().right;
             self.transplant(node_ptr, node_ptr.as_mut().right);
         } else if !node_ptr.as_ref().has_right() {
@@ -384,16 +399,14 @@ where
             self.transplant(node_ptr, node_ptr.as_mut().left);
         } else {
             let mut min_child_ptr = self.minimum(node_ptr.as_ref().right.unwrap());
-            min_child_parent_color = min_child_ptr.as_ref().is_black();
+            is_min_child_black = min_child_ptr.as_ref().is_black();
             replacement = min_child_ptr.as_mut().right;
 
-            if let Some(node_right_ptr) = node_ptr.as_mut().right {
-                if min_child_ptr != node_right_ptr {
-                    self.transplant(min_child_ptr, min_child_ptr.as_mut().right);
+            if Some(min_child_ptr) != node_ptr.as_mut().right {
+                self.transplant(min_child_ptr, min_child_ptr.as_mut().right);
 
-                    min_child_ptr.as_mut().right = node_ptr.as_mut().right;
-                    min_child_ptr.as_mut().right.unwrap().as_mut().parent = Some(min_child_ptr);
-                }
+                min_child_ptr.as_mut().right = node_ptr.as_ref().right;
+                min_child_ptr.as_mut().right.unwrap().as_mut().parent = Some(min_child_ptr);
             } else if let Some(mut replacement_ptr) = replacement {
                 replacement_ptr.as_mut().parent = Some(min_child_ptr);
             }
@@ -401,11 +414,15 @@ where
             self.transplant(node_ptr, Some(min_child_ptr));
             min_child_ptr.as_mut().left = node_ptr.as_ref().left;
             min_child_ptr.as_mut().left.unwrap().as_mut().parent = Some(min_child_ptr);
-            min_child_ptr.as_mut().color = node_ptr.as_mut().color;
+            min_child_ptr.as_mut().color = node_ptr.as_ref().color;
         }
 
-        if min_child_parent_color {
+        if is_min_child_black {
             self.balance_delete(replacement);
+        }
+
+        if leaf_deletion {
+            self.transplant(node_ptr, None);
         }
 
         Node::destroy(node_ptr)
@@ -421,23 +438,135 @@ where
         }
     }
 
-    fn transplant(&mut self, mut node_ptr: NodePtr<K>, replacement: Link<K>) {
-        unsafe {
-            if node_ptr.as_mut().parent.is_none() {
-                self.root = replacement;
-            } else if Some(node_ptr) == node_ptr.as_mut().parent.unwrap().as_ref().left {
-                node_ptr.as_mut().parent.unwrap().as_mut().left = replacement;
-            } else {
-                node_ptr.as_mut().parent.unwrap().as_mut().right = replacement;
-            }
+    unsafe fn transplant(&mut self, mut node_ptr: NodePtr<K>, replacement: Link<K>) {
+        if node_ptr.as_ref().parent.is_none() {
+            self.root = replacement;
+        } else if Some(node_ptr) == node_ptr.as_mut().parent.unwrap().as_ref().left {
+            node_ptr.as_mut().parent.unwrap().as_mut().left = replacement;
+        } else {
+            node_ptr.as_mut().parent.unwrap().as_mut().right = replacement;
+        }
 
-            if let Some(mut replacement_ptr) = replacement {
-                replacement_ptr.as_mut().parent = node_ptr.as_mut().parent;
-            }
+        if let Some(mut replacement_ptr) = replacement {
+            replacement_ptr.as_mut().parent = node_ptr.as_mut().parent;
         }
     }
 
-    fn balance_delete(&mut self, link: Link<K>) {
-        // TODO Implement balance delete
+    unsafe fn balance_delete(&mut self, mut link: Link<K>) {
+        debug_assert!(link.is_some());
+
+        while link != self.root && link.unwrap().as_ref().is_black() {
+            let mut node_ptr = link.unwrap();
+
+            macro_rules! parent_ptr {
+                () => {
+                    node_ptr.as_mut().parent.unwrap()
+                };
+            }
+            macro_rules! left_sibling {
+                () => {
+                    parent_ptr!().as_mut().left
+                };
+            }
+            macro_rules! right_sibling {
+                () => {
+                    parent_ptr!().as_mut().right
+                };
+            }
+
+            let is_left_child: bool = link == left_sibling!();
+
+            println!(
+                "{} {}",
+                right_sibling!().is_some(),
+                left_sibling!().is_some()
+            );
+
+            let mut sibling_ptr = if is_left_child {
+                right_sibling!().unwrap()
+            } else {
+                left_sibling!().unwrap()
+            };
+
+            if sibling_ptr.as_ref().is_red() {
+                sibling_ptr.as_mut().color = Color::Black;
+                parent_ptr!().as_mut().color = Color::Red;
+
+                if is_left_child {
+                    self.rotate_left(parent_ptr!());
+                } else {
+                    self.rotate_right(parent_ptr!());
+                }
+
+                sibling_ptr = if is_left_child {
+                    right_sibling!().unwrap()
+                } else {
+                    left_sibling!().unwrap()
+                }
+            }
+
+            macro_rules! primary_nephew {
+                () => {
+                    if is_left_child {
+                        sibling_ptr.as_mut().left
+                    } else {
+                        sibling_ptr.as_mut().right
+                    }
+                };
+            }
+            macro_rules! secondary_nephew {
+                () => {
+                    if is_left_child {
+                        sibling_ptr.as_mut().right
+                    } else {
+                        sibling_ptr.as_mut().left
+                    }
+                };
+            }
+
+            if (primary_nephew!().is_none() || primary_nephew!().unwrap().as_mut().is_black())
+                && (secondary_nephew!().is_none()
+                    || secondary_nephew!().unwrap().as_mut().is_black())
+            {
+                sibling_ptr.as_mut().color = Color::Red;
+                link = node_ptr.as_mut().parent;
+                continue;
+            }
+
+            if secondary_nephew!().is_none() || secondary_nephew!().unwrap().as_mut().is_black() {
+                if let Some(mut primary_nephew_ptr) = primary_nephew!() {
+                    primary_nephew_ptr.as_mut().color = Color::Black;
+                }
+                sibling_ptr.as_mut().color = Color::Red;
+
+                if is_left_child {
+                    self.rotate_right(sibling_ptr);
+                } else {
+                    self.rotate_left(sibling_ptr);
+                }
+
+                sibling_ptr = if is_left_child {
+                    right_sibling!().unwrap()
+                } else {
+                    left_sibling!().unwrap()
+                }
+            }
+
+            sibling_ptr.as_mut().color = parent_ptr!().as_ref().color;
+            parent_ptr!().as_mut().color = Color::Black;
+            if let Some(mut secondary_nephew_ptr) = secondary_nephew!() {
+                secondary_nephew_ptr.as_mut().color = Color::Black;
+            }
+
+            if is_left_child {
+                self.rotate_left(parent_ptr!());
+            } else {
+                self.rotate_right(parent_ptr!());
+            }
+
+            link = self.root;
+        }
+
+        link.unwrap().as_mut().color = Color::Black;
     }
 }
