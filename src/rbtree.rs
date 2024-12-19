@@ -183,6 +183,27 @@ where
         }
     }
 
+    pub fn preorder_tranverse(&self) -> Vec<K> {
+        let mut result: Vec<K> = Vec::new();
+
+        self.preorder(self.root.borrow(), &mut result);
+
+        result
+    }
+
+    fn preorder(&self, node: &Link<K>, result: &mut Vec<K>) {
+        match node {
+            None => return,
+            Some(node_ptr) => unsafe {
+                let key = node_ptr.as_ref().key;
+
+                result.push(key);
+                self.preorder(node_ptr.as_ref().left.borrow(), result);
+                self.preorder(node_ptr.as_ref().right.borrow(), result);
+            },
+        }
+    }
+
     fn rotate_left(&mut self, mut node_ptr: NodePtr<K>) {
         unsafe {
             if let Some(mut right_ptr) = node_ptr.as_ref().right {
