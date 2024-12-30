@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, cmp::Ordering, fmt::Debug, marker::PhantomData, ptr::NonNull};
+use std::{borrow::Borrow, cmp::Ordering, fmt::Debug, ptr::NonNull};
 
 #[derive(Clone, Copy, Debug)]
 enum Color {
@@ -19,33 +19,12 @@ type NodePtr<K> = NonNull<Node<K>>;
 type Link<K> = Option<NodePtr<K>>;
 type LinkPtr<K> = NonNull<Link<K>>;
 
-pub enum Entry<'a, K: 'a> {
-    Vacant(VacantEntry<'a, K>),
-    Occupied(OccupiedEntry<'a, K>),
-}
-
-pub struct VacantEntry<'a, K: 'a> {
-    tree: &'a mut RbTree<K>,
-    parent: Link<K>,
-    insert_pos: LinkPtr<K>,
-    key: K,
-    marker: PhantomData<&'a K>,
-}
-
-pub struct OccupiedEntry<'a, K: 'a> {
-    tree: &'a mut RbTree<K>,
-    node_ptr: NodePtr<K>,
-    marker: PhantomData<&'a K>,
-}
-
 enum InsertPos<K> {
     Vacant {
         parent: Link<K>,
         link_ptr: LinkPtr<K>,
     },
-    Occupied {
-        node_ptr: NodePtr<K>,
-    },
+    Occupied {},
 }
 
 impl<K: Debug> Node<K> {
@@ -67,13 +46,6 @@ impl<K: Debug> Node<K> {
         boxed.key
     }
 
-    fn reset_links(&mut self, parent: Link<K>) {
-        self.parent = parent;
-        self.left = None;
-        self.right = None;
-        self.color = Color::Red;
-    }
-
     fn is_red(&self) -> bool {
         match self.color {
             Color::Black => false,
@@ -89,20 +61,12 @@ impl<K: Debug> Node<K> {
         return self.left.is_some() || self.right.is_some();
     }
 
-    fn has_children(&self) -> bool {
-        return self.left.is_some() && self.right.is_some();
-    }
-
     fn has_left(&self) -> bool {
         return self.left.is_some();
     }
 
     fn has_right(&self) -> bool {
         return self.right.is_some();
-    }
-
-    fn has_parent(&self) -> bool {
-        return self.parent.is_some();
     }
 }
 
@@ -111,6 +75,7 @@ pub struct RbTree<K> {
     root: Link<K>,
 }
 
+#[allow(dead_code)]
 impl<K> RbTree<K>
 where
     K: Copy + Debug,
@@ -264,7 +229,7 @@ where
                 self.insert_entry_at_pos(parent, link_ptr, key);
                 true
             },
-            InsertPos::Occupied { node_ptr: _ } => false,
+            InsertPos::Occupied {} => false,
         }
     }
 
@@ -279,7 +244,7 @@ where
         unsafe {
             while let Some(mut node_ptr) = link_ptr.as_ref() {
                 if key == node_ptr.as_ref().key.borrow() {
-                    return InsertPos::Occupied { node_ptr };
+                    return InsertPos::Occupied {};
                 } else {
                     parent = *link_ptr.as_ref();
                     if key < node_ptr.as_ref().key.borrow() {
