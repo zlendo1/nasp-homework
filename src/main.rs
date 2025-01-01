@@ -2,7 +2,7 @@ mod fibheap;
 mod rbtree;
 
 #[cfg(test)]
-mod tests_rbtree;
+mod tests_fibheap;
 
 use std::io;
 
