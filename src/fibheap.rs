@@ -1,7 +1,5 @@
-use std::collections::LinkedList;
-
 pub struct FHeap<T> {
-    roots: LinkedList<Tree<T>>,
+    roots: Vec<Tree<T>>,
     len: usize,
 }
 
@@ -11,22 +9,36 @@ struct Tree<T> {
 }
 
 impl<T: Ord> FHeap<T> {
+    pub fn new() -> Self {
+        Self {
+            roots: Default::default(),
+            len: 0,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
     pub fn peek(&self) -> Option<&T> {
-        self.roots.front().map(Tree::root)
+        self.roots.last().map(Tree::root)
     }
 
     pub fn push(&mut self, item: T) {
-        if self.peek().map(|o| &item <= o).unwrap_or(true) {
-            self.roots.push_front(Tree::new(item));
-        } else {
-            self.roots.push_back(Tree::new(item));
+        let new_min = self.peek().map(|o| &item <= o).unwrap_or(true);
+
+        self.roots.push(Tree::new(item));
+
+        if !new_min {
+            let i = self.roots.len() - 1;
+            self.roots.swap(i - 1, i);
         }
 
         self.len += 1;
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        let Tree { node, children } = match self.roots.pop_front() {
+        let Tree { node, children } = match self.roots.pop() {
             Some(x) => x,
             None => return None,
         };
@@ -37,12 +49,12 @@ impl<T: Ord> FHeap<T> {
 
         Self::rebalance(&mut self.roots, self.len);
 
-        Self::bring_min_to_front(&mut self.roots);
+        Self::order_min(&mut self.roots);
 
         Some(node)
     }
 
-    fn rebalance(roots: &mut LinkedList<Tree<T>>, nodes: usize) {
+    fn rebalance(roots: &mut Vec<Tree<T>>, nodes: usize) {
         if roots.is_empty() {
             return;
         }
@@ -52,9 +64,14 @@ impl<T: Ord> FHeap<T> {
         let mut buf: Vec<Option<Tree<T>>> =
             std::iter::repeat_with(|| None).take(cap as usize).collect();
 
-        while let Some(mut tree) = roots.pop_front() {
+        while let Some(mut tree) = roots.pop() {
             loop {
                 let degree = tree.degree();
+
+                debug_assert!(
+                    degree < cap as usize,
+                    "Degree is greater than log2(len) + 1"
+                );
 
                 tree = match buf[degree].take() {
                     None => {
@@ -76,7 +93,7 @@ impl<T: Ord> FHeap<T> {
         roots.extend(buf.into_iter().filter_map(|x| x));
     }
 
-    fn bring_min_to_front(roots: &mut LinkedList<Tree<T>>) {
+    fn order_min(roots: &mut Vec<Tree<T>>) {
         let min_index = roots
             .iter()
             .enumerate()
@@ -84,9 +101,51 @@ impl<T: Ord> FHeap<T> {
             .map(|(idx, _)| idx);
 
         if let Some(idx) = min_index {
-            let mut split = roots.split_off(idx);
-            split.append(roots);
-            *roots = split;
+            let lastidx = roots.len() - 1;
+            roots.swap(idx, lastidx);
+        }
+    }
+
+    pub fn union(mut first: Self, mut second: Self) -> Self {
+        let mut new = Self::new();
+
+        let i = first.roots.len();
+        let j = second.roots.len();
+
+        let swap_min = i != 0 && j != 0 && first.peek() < second.peek();
+
+        new.roots.append(&mut first.roots);
+        new.roots.append(&mut second.roots);
+
+        first.len = 0;
+        second.len = 0;
+
+        if swap_min {
+            new.roots.swap(i - 1, j - 1);
+        }
+
+        new
+    }
+}
+
+impl<T: Ord> FromIterator<T> for FHeap<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut heap = Self::new();
+        heap.extend(iter);
+        heap
+    }
+}
+
+impl<T: Ord> Extend<T> for FHeap<T> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        let iter = iter.into_iter();
+
+        if let (_, Some(upr)) = iter.size_hint() {
+            self.roots.reserve(upr);
+        }
+
+        for x in iter {
+            self.push(x);
         }
     }
 }
@@ -95,7 +154,7 @@ impl<T> Tree<T> {
     fn new(item: T) -> Self {
         return Self {
             node: item,
-            children: vec![],
+            children: Vec::new(),
         };
     }
 
