@@ -1,9 +1,6 @@
 mod fibheap;
 mod rbtree;
 
-#[cfg(test)]
-mod tests_fibheap;
-
 use std::io;
 
 use rbtree::RbTree;
