@@ -1,9 +1,6 @@
-mod fibheap;
-mod rbtree;
-
 use std::io;
 
-use rbtree::RbTree;
+use nasp_homework::rbtree::RbTree;
 
 fn main() {
     let mut tree: RbTree<i32> = RbTree::new();
