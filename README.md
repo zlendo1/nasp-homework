@@ -13,15 +13,15 @@ tests, thus spreading the crustacean plague
 
 ## Installation
 1. Install `rustup` on your machine (please refer to [this](https://rustup.rs/))
-2. Clone this repository.
+2. Clone this repository
 
 ## Testing
-1. Navigate to the local repository.
-2. Run `cargo test` or `cargo test --test module_name`
+1. Navigate to the local repository
+2. Run `cargo test` or `cargo test --test module_name` in your shell of choice
 
 ## Known issues
 * Industrial society and its consequences
 
 ## Licence
 Licenced under the GNU General Purpose Licence 3.0 because libre software is
-based and redpilled
+based and redpilled\.
