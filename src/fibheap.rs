@@ -1,4 +1,4 @@
-pub struct FHeap<T> {
+pub struct FibHeap<T> {
     roots: Vec<Tree<T>>,
     len: usize,
 }
@@ -8,7 +8,7 @@ struct Tree<T> {
     children: Vec<Tree<T>>,
 }
 
-impl<T: Ord> FHeap<T> {
+impl<T: Ord> FibHeap<T> {
     pub fn new() -> Self {
         Self {
             roots: Default::default(),
@@ -128,7 +128,7 @@ impl<T: Ord> FHeap<T> {
     }
 }
 
-impl<T: Ord> FromIterator<T> for FHeap<T> {
+impl<T: Ord> FromIterator<T> for FibHeap<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut heap = Self::new();
         heap.extend(iter);
@@ -136,7 +136,7 @@ impl<T: Ord> FromIterator<T> for FHeap<T> {
     }
 }
 
-impl<T: Ord> Extend<T> for FHeap<T> {
+impl<T: Ord> Extend<T> for FibHeap<T> {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
