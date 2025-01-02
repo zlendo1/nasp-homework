@@ -42,27 +42,31 @@ fn pops_by_min(xs: Vec<u32>) {
 }
 
 #[quickcheck]
-fn union(xs: Vec<u32>, ys: Vec<u32>) {
+fn union(xs: Vec<u32>) {
     let mut heap_one = FibHeap::new();
     let mut heap_two = FibHeap::new();
 
-    for x in &xs {
+    let mid = xs.len() / 2;
+    let first = xs[0..mid].to_vec();
+    let second = xs[mid..].to_vec();
+
+    for x in &first {
         heap_one.push(*x);
     }
 
-    for y in &ys {
+    for y in &second {
         heap_two.push(*y)
     }
 
     let heap = FibHeap::union(heap_one, heap_two);
 
-    let mut comb = xs.clone();
-    comb.extend(ys);
+    let mut comb = first.clone();
+    comb.extend(second);
 
     comb.sort();
     comb.reverse();
 
-    heap_vec_eq(heap, comb);
+    assert_heap_vec_eq(heap, comb);
 }
 
 fn pops_by_min_check(mut xs: Vec<u32>) {
@@ -75,10 +79,10 @@ fn pops_by_min_check(mut xs: Vec<u32>) {
     xs.sort();
     xs.reverse();
 
-    heap_vec_eq(heap, xs);
+    assert_heap_vec_eq(heap, xs);
 }
 
-fn heap_vec_eq<T: Ord + Debug>(mut heap: FibHeap<T>, mut vec: Vec<T>) {
+fn assert_heap_vec_eq<T: Ord + Debug>(mut heap: FibHeap<T>, mut vec: Vec<T>) {
     while let Some(b) = heap.pop() {
         let a = vec.pop();
         assert_eq!(a, Some(b), "should in pop ascending order");

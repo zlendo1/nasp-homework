@@ -117,11 +117,12 @@ impl<T: Ord> FibHeap<T> {
         new.roots.append(&mut first.roots);
         new.roots.append(&mut second.roots);
 
+        new.len = first.len + second.len;
         first.len = 0;
         second.len = 0;
 
         if swap_min {
-            new.roots.swap(i - 1, j - 1);
+            new.roots.swap(i - 1, i + j - 1);
         }
 
         new
