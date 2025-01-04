@@ -83,10 +83,7 @@ fn pops_by_min_check(mut xs: Vec<u32>) {
     assert_heap_vec_eq(heap, xs);
 }
 
-fn assert_heap_vec_eq<T: Ord + Bounded + Copy + Clone + Debug>(
-    mut heap: FibHeap<T>,
-    mut vec: Vec<T>,
-) {
+fn assert_heap_vec_eq<T: Ord + Bounded + Clone + Debug>(mut heap: FibHeap<T>, mut vec: Vec<T>) {
     while let Some(b) = heap.pop() {
         let a = vec.pop();
         assert_eq!(a, Some(b), "should in pop ascending order");

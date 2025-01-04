@@ -12,7 +12,7 @@ struct Tree<T> {
     mark: bool,
 }
 
-impl<T: Ord + Bounded + Copy + Clone> FibHeap<T> {
+impl<T: Ord + Bounded + Clone> FibHeap<T> {
     pub fn new() -> Self {
         Self {
             roots: Default::default(),
@@ -205,7 +205,7 @@ impl<T: Ord + Bounded + Copy + Clone> FibHeap<T> {
     }
 }
 
-impl<T: Ord + Bounded + Copy + Clone> FromIterator<T> for FibHeap<T> {
+impl<T: Ord + Bounded + Clone> FromIterator<T> for FibHeap<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut heap = Self::new();
         heap.extend(iter);
@@ -213,7 +213,7 @@ impl<T: Ord + Bounded + Copy + Clone> FromIterator<T> for FibHeap<T> {
     }
 }
 
-impl<T: Ord + Bounded + Copy + Clone> Extend<T> for FibHeap<T> {
+impl<T: Ord + Bounded + Clone> Extend<T> for FibHeap<T> {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
@@ -227,7 +227,7 @@ impl<T: Ord + Bounded + Copy + Clone> Extend<T> for FibHeap<T> {
     }
 }
 
-impl<T: Copy + Clone> Tree<T> {
+impl<T: Clone> Tree<T> {
     fn new(item: T) -> Self {
         return Self {
             node: item,
@@ -247,7 +247,7 @@ impl<T: Copy + Clone> Tree<T> {
 
     fn take(&mut self) -> Tree<T> {
         let new_tree = Tree {
-            node: self.node,
+            node: self.node.clone(),
             children: std::mem::take(&mut self.children),
             parent: std::mem::take(&mut self.parent),
             mark: self.mark,
