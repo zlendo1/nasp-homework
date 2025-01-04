@@ -1,3 +1,5 @@
+use num::traits::bounds::Bounded;
+
 pub struct FibHeap<T> {
     roots: Vec<Tree<T>>,
     len: usize,
@@ -10,7 +12,7 @@ struct Tree<T> {
     mark: bool,
 }
 
-impl<T: Ord> FibHeap<T> {
+impl<T: Ord + Bounded + Copy + Clone> FibHeap<T> {
     pub fn new() -> Self {
         Self {
             roots: Default::default(),
@@ -134,9 +136,76 @@ impl<T: Ord> FibHeap<T> {
 
         new
     }
+
+    fn decrease_key(&mut self, tree_ptr: *mut Tree<T>, new_value: T) {
+        unsafe {
+            let tree = &mut *tree_ptr;
+
+            debug_assert!(
+                new_value <= tree.node,
+                "New value must be less than the current value"
+            );
+
+            tree.node = new_value;
+
+            if let Some(parent_ptr) = tree.parent {
+                let parent = &mut *parent_ptr;
+
+                if tree.node < parent.node {
+                    self.cut(tree_ptr);
+                    self.cascading_cut(parent_ptr);
+                }
+            }
+
+            Self::order_min(&mut self.roots);
+        }
+    }
+
+    fn delete(&mut self, tree_ptr: *mut Tree<T>) {
+        self.decrease_key(tree_ptr, T::min_value());
+        self.pop();
+    }
+
+    fn cut(&mut self, tree_ptr: *mut Tree<T>) {
+        unsafe {
+            let tree = &mut *tree_ptr;
+
+            if let Some(parent_ptr) = tree.parent {
+                let parent = &mut *parent_ptr;
+
+                let index = parent
+                    .children
+                    .iter()
+                    .position(|child| std::ptr::eq(child, tree));
+
+                if let Some(idx) = index {
+                    parent.children.swap_remove(idx);
+                }
+
+                tree.parent = None;
+                tree.mark = false;
+                self.roots.push(tree.take());
+            }
+        }
+    }
+
+    fn cascading_cut(&mut self, tree_ptr: *mut Tree<T>) {
+        unsafe {
+            let tree = &mut *tree_ptr;
+
+            if let Some(parent_ptr) = tree.parent {
+                if tree.mark {
+                    self.cut(tree_ptr);
+                    self.cascading_cut(parent_ptr);
+                } else {
+                    tree.mark = true;
+                }
+            }
+        }
+    }
 }
 
-impl<T: Ord> FromIterator<T> for FibHeap<T> {
+impl<T: Ord + Bounded + Copy + Clone> FromIterator<T> for FibHeap<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut heap = Self::new();
         heap.extend(iter);
@@ -144,7 +213,7 @@ impl<T: Ord> FromIterator<T> for FibHeap<T> {
     }
 }
 
-impl<T: Ord> Extend<T> for FibHeap<T> {
+impl<T: Ord + Bounded + Copy + Clone> Extend<T> for FibHeap<T> {
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         let iter = iter.into_iter();
 
@@ -158,7 +227,7 @@ impl<T: Ord> Extend<T> for FibHeap<T> {
     }
 }
 
-impl<T> Tree<T> {
+impl<T: Copy + Clone> Tree<T> {
     fn new(item: T) -> Self {
         return Self {
             node: item,
@@ -174,5 +243,69 @@ impl<T> Tree<T> {
 
     fn degree(&self) -> usize {
         self.children.len()
+    }
+
+    fn take(&mut self) -> Tree<T> {
+        let new_tree = Tree {
+            node: self.node,
+            children: std::mem::take(&mut self.children),
+            parent: std::mem::take(&mut self.parent),
+            mark: self.mark,
+        };
+
+        new_tree
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quickcheck_macros::*;
+
+    #[quickcheck]
+    fn decrease_key(mut elements: Vec<u32>) {
+        if elements.is_empty() {
+            return;
+        }
+
+        elements.sort();
+        elements.dedup();
+        elements.swap_remove(0);
+
+        if elements.is_empty() {
+            return;
+        }
+
+        let mut heap = FibHeap::new();
+
+        for &element in &elements {
+            heap.push(element);
+        }
+
+        let new_min = heap.peek().copied().unwrap() - 1;
+
+        let min_node_ptr = heap.roots.last_mut().unwrap() as *mut Tree<u32>;
+        heap.decrease_key(min_node_ptr, new_min);
+
+        assert_eq!(heap.peek(), Some(&new_min))
+    }
+
+    #[quickcheck]
+    fn delete(elements: Vec<u32>) {
+        if elements.len() < 2 {
+            return;
+        }
+
+        let mut heap = FibHeap::new();
+
+        for &element in &elements {
+            heap.push(element);
+        }
+
+        let delete_node_ptr = heap.roots.first_mut().unwrap() as *mut Tree<u32>;
+
+        heap.delete(delete_node_ptr);
+
+        assert_eq!(heap.len(), elements.len() - 1)
     }
 }
