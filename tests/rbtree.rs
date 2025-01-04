@@ -1,7 +1,7 @@
 use nasp_homework::rbtree::RbTree;
 
 #[test]
-fn test_insert() {
+fn insert() {
     let mut tree: RbTree<u32> = RbTree::new();
 
     assert!(tree.is_empty());
@@ -20,7 +20,7 @@ fn test_insert() {
 }
 
 #[test]
-fn test_clear() {
+fn clear() {
     let mut tree: RbTree<u32> = RbTree::new();
 
     assert!(tree.is_empty());
@@ -39,7 +39,7 @@ fn test_clear() {
 }
 
 #[test]
-fn test_delete() {
+fn delete() {
     let mut tree: RbTree<u32> = RbTree::new();
 
     assert!(tree.is_empty());
