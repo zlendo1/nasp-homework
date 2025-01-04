@@ -6,6 +6,8 @@ pub struct FibHeap<T> {
 struct Tree<T> {
     node: T,
     children: Vec<Tree<T>>,
+    parent: Option<*mut Tree<T>>,
+    mark: bool,
 }
 
 impl<T: Ord> FibHeap<T> {
@@ -38,17 +40,22 @@ impl<T: Ord> FibHeap<T> {
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        let Tree { node, children } = match self.roots.pop() {
+        let Tree {
+            node, mut children, ..
+        } = match self.roots.pop() {
             Some(x) => x,
             None => return None,
         };
 
         self.len -= 1;
 
+        for child in &mut children {
+            child.parent = None;
+        }
+
         self.roots.extend(children);
 
         Self::rebalance(&mut self.roots, self.len);
-
         Self::order_min(&mut self.roots);
 
         Some(node)
@@ -156,6 +163,8 @@ impl<T> Tree<T> {
         return Self {
             node: item,
             children: Vec::new(),
+            parent: None,
+            mark: false,
         };
     }
 
