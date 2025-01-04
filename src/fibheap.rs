@@ -134,6 +134,35 @@ impl<T: Ord> FibHeap<T> {
 
         new
     }
+
+    pub fn decrease_key(&mut self, node: &mut Tree<T>, new_key: T) {
+        if new_key > node.node {
+            panic!("New key is greater than current key");
+        }
+
+        node.node = new_key;
+        let mut parent = node.parent;
+
+        while let Some(parent_ptr) = parent {
+            unsafe {
+                if node.node >= (*parent_ptr).node {
+                    break;
+                }
+
+                std::ptr::swap(node, &mut *parent_ptr);
+                parent = (*parent_ptr).parent;
+            }
+        }
+
+        if node.parent.is_none() {
+            Self::order_min(&mut self.roots);
+        }
+    }
+
+    pub fn delete(&mut self, node: &mut Tree<T>) {
+        self.decrease_key(node, self.roots.last().unwrap().node.clone());
+        self.pop();
+    }
 }
 
 impl<T: Ord> FromIterator<T> for FibHeap<T> {
@@ -174,5 +203,34 @@ impl<T> Tree<T> {
 
     fn degree(&self) -> usize {
         self.children.len()
+    }
+
+    fn decrease_key(&mut self, new_key: T) {
+        if new_key > self.node {
+            panic!("New key is greater than current key");
+        }
+
+        self.node = new_key;
+        let mut parent = self.parent;
+
+        while let Some(parent_ptr) = parent {
+            unsafe {
+                if self.node >= (*parent_ptr).node {
+                    break;
+                }
+
+                std::ptr::swap(self, &mut *parent_ptr);
+                parent = (*parent_ptr).parent;
+            }
+        }
+
+        if self.parent.is_none() {
+            // Reorder the roots in the heap
+        }
+    }
+
+    fn delete(&mut self) {
+        self.decrease_key(self.node.clone());
+        // Remove the node from the heap
     }
 }

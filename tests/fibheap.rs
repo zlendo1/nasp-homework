@@ -88,3 +88,30 @@ fn assert_heap_vec_eq<T: Ord + Debug>(mut heap: FibHeap<T>, mut vec: Vec<T>) {
         assert_eq!(a, Some(b), "should in pop ascending order");
     }
 }
+
+#[test]
+fn test_decrease_key() {
+    let mut heap = FibHeap::new();
+    heap.push(10);
+    heap.push(20);
+    heap.push(30);
+
+    let mut node = heap.roots.last_mut().unwrap();
+    heap.decrease_key(node, 5);
+
+    assert_eq!(heap.peek(), Some(&5));
+}
+
+#[test]
+fn test_delete() {
+    let mut heap = FibHeap::new();
+    heap.push(10);
+    heap.push(20);
+    heap.push(30);
+
+    let mut node = heap.roots.last_mut().unwrap();
+    heap.delete(node);
+
+    assert_eq!(heap.len(), 2);
+    assert_eq!(heap.peek(), Some(&10));
+}
