@@ -146,7 +146,10 @@ impl<T: Ord + Bounded + Clone> FibHeap<T> {
                 "New value must be less than the current value"
             );
 
-            tree.node = new_value;
+            let old_max = self.peek().cloned();
+            let old_roots_len = self.roots.len();
+
+            tree.node = new_value.clone();
 
             if let Some(parent_ptr) = tree.parent {
                 let parent = &mut *parent_ptr;
@@ -157,7 +160,11 @@ impl<T: Ord + Bounded + Clone> FibHeap<T> {
                 }
             }
 
-            Self::order_min(&mut self.roots);
+            if let Some(omax) = old_max {
+                if old_roots_len != self.roots.len() && new_value < omax {
+                    self.roots.swap(old_roots_len - 1, old_roots_len)
+                }
+            }
         }
     }
 
