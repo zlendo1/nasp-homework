@@ -132,3 +132,63 @@ impl CNF {
         return false;
     }
 }
+
+pub struct Graph {
+    relation: Vec<Vec<usize>>,
+}
+
+impl Graph {
+    pub fn new(relation: Vec<Vec<usize>>) -> Self {
+        let num_nodes = relation.len();
+
+        for row in relation.iter() {
+            debug_assert!(row.len() == num_nodes, "Relation matrix must be square!");
+
+            for el in row.iter() {
+                debug_assert!(
+                    *el < num_nodes,
+                    "Relations in matrix must relate to existing node!"
+                );
+            }
+        }
+
+        return Self { relation };
+    }
+
+    pub fn comp_size(&self, nodes: &Vec<usize>) {
+        debug_assert!(
+            nodes.len() <= self.relation.len(),
+            "List of nodes must be compatible with relation matrix!"
+        );
+    }
+
+    pub fn verify_indset(&self, nodes: &Vec<usize>) -> bool {
+        for i in 0..nodes.len() {
+            for j in (i + 1)..nodes.len() {
+                let u = nodes[i];
+                let v = nodes[j];
+
+                if self.relation[u][v] != 0 {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    pub fn verify_clique(&self, nodes: &Vec<usize>) -> bool {
+        for i in 0..nodes.len() {
+            for j in (i + 1)..nodes.len() {
+                let u = nodes[i];
+                let v = nodes[j];
+
+                if self.relation[u][v] == 0 {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+}
