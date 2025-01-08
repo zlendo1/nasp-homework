@@ -191,4 +191,57 @@ impl Graph {
 
         return true;
     }
+
+    fn combinations(&self, n: usize, k: usize) -> Vec<Vec<usize>> {
+        let mut result = Vec::new();
+        let mut temp = Vec::new();
+
+        self.combinations_helper(0, n, k, &mut temp, &mut result);
+
+        result
+    }
+
+    fn combinations_helper(
+        &self,
+        start: usize,
+        n: usize,
+        k: usize,
+        temp: &mut Vec<usize>,
+        result: &mut Vec<Vec<usize>>,
+    ) {
+        if temp.len() == k {
+            result.push(temp.clone());
+            return;
+        }
+
+        for i in start..n {
+            temp.push(i);
+            self.combinations_helper(i + 1, n, k, temp, result);
+            temp.pop();
+        }
+    }
+
+    pub fn result_k_clique(&self, k: usize) -> bool {
+        let n = self.relation.len();
+        let subsets = self.combinations(n, k);
+
+        for subset in subsets {
+            if self.verify_clique(&subset) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn result_k_indset(&self, k: usize) -> bool {
+        let n = self.relation.len();
+        let subsets = self.combinations(n, k);
+
+        for subset in subsets {
+            if self.verify_indset(&subset) {
+                return true;
+            }
+        }
+        false
+    }
 }

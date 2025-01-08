@@ -22,7 +22,7 @@ fn cnf_result() {
 }
 
 #[test]
-fn test_is_independent_set() {
+fn verify_indset() {
     let graph = Graph::new(vec![
         vec![0, 1, 0, 0],
         vec![1, 0, 1, 0],
@@ -38,7 +38,7 @@ fn test_is_independent_set() {
 }
 
 #[test]
-fn test_is_clique() {
+fn verify_clique() {
     let graph = Graph::new(vec![
         vec![0, 1, 1, 0],
         vec![1, 0, 1, 1],
@@ -54,7 +54,7 @@ fn test_is_clique() {
 }
 
 #[test]
-fn test_empty_set_and_singleton_set() {
+fn empty_singleton_set() {
     let graph = Graph::new(vec![vec![0, 1], vec![1, 0]]);
 
     assert!(graph.verify_indset(&vec![]));
@@ -64,4 +64,49 @@ fn test_empty_set_and_singleton_set() {
     assert!(graph.verify_clique(&vec![0]));
     assert!(graph.verify_indset(&vec![1]));
     assert!(graph.verify_clique(&vec![1]));
+}
+
+#[test]
+fn result_k_indset() {
+    let graph = Graph::new(vec![
+        vec![0, 1, 0, 0],
+        vec![1, 0, 1, 0],
+        vec![0, 1, 0, 1],
+        vec![0, 0, 1, 0],
+    ]);
+
+    assert!(graph.result_k_indset(1));
+    assert!(graph.result_k_indset(2));
+    assert!(!graph.result_k_indset(3));
+    assert!(!graph.result_k_indset(5));
+}
+
+#[test]
+fn result_k_clique() {
+    let graph = Graph::new(vec![
+        vec![0, 1, 1, 0],
+        vec![1, 0, 1, 1],
+        vec![1, 1, 0, 1],
+        vec![0, 1, 1, 0],
+    ]);
+
+    assert!(graph.result_k_clique(2));
+    assert!(graph.result_k_clique(3));
+    assert!(!graph.result_k_clique(4));
+    assert!(!graph.result_k_clique(5));
+}
+
+#[test]
+fn graph_edge_cases() {
+    let empty_graph = Graph::new(vec![]);
+
+    assert!(!empty_graph.result_k_clique(1));
+    assert!(!empty_graph.result_k_indset(1));
+
+    let single_node_graph = Graph::new(vec![vec![0]]);
+
+    assert!(single_node_graph.result_k_clique(1));
+    assert!(single_node_graph.result_k_indset(1));
+    assert!(!single_node_graph.result_k_clique(2));
+    assert!(!single_node_graph.result_k_indset(2));
 }
