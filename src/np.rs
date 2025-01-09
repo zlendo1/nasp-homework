@@ -45,6 +45,12 @@ impl Statement {
     }
 }
 
+impl From<Vec<bool>> for Statement {
+    fn from(binary: Vec<bool>) -> Self {
+        Self { binary }
+    }
+}
+
 impl CNF {
     pub fn new(new_formula: Vec<Vec<i32>>) -> Self {
         debug_assert!(new_formula.len() < 8, "No more than 8 clauses permitable!");
@@ -120,7 +126,6 @@ impl CNF {
 
         for _ in 0..max_iter {
             if self.verify(&statement) {
-                println!("{:?}", statement.binary);
                 return true;
             }
 
