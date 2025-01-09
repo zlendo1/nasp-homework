@@ -160,6 +160,10 @@ impl Graph {
         );
     }
 
+    pub fn num_nodes(&self) -> usize {
+        return self.relation.len();
+    }
+
     pub fn verify_indset(&self, nodes: &Vec<usize>) -> bool {
         for i in 0..nodes.len() {
             for j in (i + 1)..nodes.len() {
@@ -241,5 +245,81 @@ impl Graph {
             }
         }
         false
+    }
+
+    pub fn to_indset(cnf: &CNF) -> Self {
+        let mut nodes = Vec::new();
+        let mut literal_to_node = HashMap::new();
+        let mut next_node = 0;
+
+        for clause in cnf.formula.iter() {
+            for &literal in clause {
+                if !literal_to_node.contains_key(&literal) {
+                    literal_to_node.insert(literal, next_node);
+                    nodes.push(literal);
+                    next_node += 1;
+                }
+            }
+        }
+
+        let node_count = nodes.len();
+        let mut relation = vec![vec![0; node_count]; node_count];
+
+        for i in 0..node_count {
+            for j in (i + 1)..node_count {
+                let literal1 = nodes[i];
+                let literal2 = nodes[j];
+
+                if literal1 == -literal2
+                    || cnf
+                        .formula
+                        .iter()
+                        .any(|clause| clause.contains(&literal1) && clause.contains(&literal2))
+                {
+                    relation[i][j] = 1;
+                    relation[j][i] = 1;
+                }
+            }
+        }
+
+        return Self { relation };
+    }
+
+    pub fn to_clique(cnf: &CNF) -> Graph {
+        let mut nodes = Vec::new();
+        let mut literal_to_node = HashMap::new();
+        let mut next_node = 0;
+
+        for clause in cnf.formula.iter() {
+            for &literal in clause {
+                if !literal_to_node.contains_key(&literal) {
+                    literal_to_node.insert(literal, next_node);
+                    nodes.push(literal);
+                    next_node += 1;
+                }
+            }
+        }
+
+        let node_count = nodes.len();
+        let mut relation = vec![vec![0; node_count]; node_count];
+
+        for i in 0..node_count {
+            for j in (i + 1)..node_count {
+                let literal1 = nodes[i];
+                let literal2 = nodes[j];
+
+                if literal1 != -literal2
+                    && !cnf
+                        .formula
+                        .iter()
+                        .any(|clause| clause.contains(&literal1) && clause.contains(&literal2))
+                {
+                    relation[i][j] = 1;
+                    relation[j][i] = 1;
+                }
+            }
+        }
+
+        return Self { relation };
     }
 }

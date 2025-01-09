@@ -110,3 +110,46 @@ fn graph_edge_cases() {
     assert!(!single_node_graph.result_k_clique(2));
     assert!(!single_node_graph.result_k_indset(2));
 }
+
+#[test]
+fn to_indset() {
+    // CNF: (x1 ∨ x2 ∨ ¬x3) ∧ (¬x1 ∨ x3 ∨ x4)
+    let cnf = CNF::new(vec![vec![1, 2, -3], vec![-1, 3, 4]]);
+
+    let graph = Graph::to_indset(&cnf);
+
+    assert_eq!(graph.result_k_indset(2), cnf.result());
+}
+
+#[test]
+fn to_clique() {
+    // CNF: (x1 ∨ x2 ∨ ¬x3) ∧ (¬x1 ∨ x3 ∨ x4)
+    let cnf = CNF::new(vec![vec![1, 2, -3], vec![-1, 3, 4]]);
+
+    let graph = Graph::to_clique(&cnf);
+
+    assert_eq!(graph.result_k_clique(2), cnf.result());
+}
+
+#[test]
+fn empty_cnf() {
+    let cnf = CNF::new(vec![]);
+
+    let indset_graph = Graph::to_indset(&cnf);
+    let clique_graph = Graph::to_clique(&cnf);
+
+    assert_eq!(indset_graph.num_nodes(), 0);
+    assert_eq!(clique_graph.num_nodes(), 0);
+}
+
+#[test]
+fn single_clause_cnf() {
+    // CNF: (x1 ∨ x2 ∨ ¬x3)
+    let cnf = CNF::new(vec![vec![1, 2, -3]]);
+
+    let indset_graph = Graph::to_indset(&cnf);
+    let clique_graph = Graph::to_clique(&cnf);
+
+    assert_eq!(indset_graph.result_k_indset(1), cnf.result());
+    assert_eq!(clique_graph.result_k_clique(1), cnf.result());
+}
