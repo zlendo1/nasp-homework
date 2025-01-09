@@ -116,17 +116,15 @@ impl CNF {
     pub fn result(&self) -> bool {
         let mut statement = Statement::new(self.num_variables);
 
-        let mut i = 0_usize;
         let max_iter = 2_usize.pow(self.num_variables as u32);
 
-        while i < max_iter {
+        for _ in 0..max_iter {
             if self.verify(&statement) {
                 println!("{:?}", statement.binary);
                 return true;
             }
 
             statement.increment();
-            i += 1;
         }
 
         return false;
