@@ -285,7 +285,7 @@ impl Graph {
         return Self { relation };
     }
 
-    pub fn to_clique(cnf: &CNF) -> Graph {
+    pub fn to_clique(cnf: &CNF) -> Self {
         let mut nodes = Vec::new();
         let mut literal_to_node = HashMap::new();
         let mut next_node = 0;
