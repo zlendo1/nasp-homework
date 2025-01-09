@@ -153,7 +153,7 @@ impl Graph {
         return Self { relation };
     }
 
-    pub fn comp_size(&self, nodes: &Vec<usize>) {
+    fn comp_size(&self, nodes: &Vec<usize>) {
         debug_assert!(
             nodes.len() <= self.relation.len(),
             "List of nodes must be compatible with relation matrix!"
