@@ -24,5 +24,4 @@ tests, thus spreading the crustacean plague
 * Industrial society and its consequences
 
 ## Licence
-Licenced under the GNU General Purpose Licence 3.0 because libre software is
-based and redpilled\.
+Licenced under the GNU General Purpose Licence 3.0 because libre software great\.
